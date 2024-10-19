@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRAMs Control</title>
+    <style>
+        body {
+            background-color: #141414;
+            margin: 0;
+            padding: 0;
+        }
+        @font-face {
+            font-family: 'NotoSansJP_ExtraLight';
+            src: url('fonts/NotoSansJP-ExtraLight.ttf') format('truetype');
+            font-weight: 200;
+        }
+        @font-face {
+            font-family: 'NotoSansJP_Regular';
+            src: url('test/Controler/fonts/NotoSansJP-Regular.ttf') format('truetype');
+            font-weight: 600;
+        }
+        @font-face {
+            font-family: 'Galette';
+            src: url('fonts/galette_light.otf') format('opentype');
+            font-weight: 300;
+        }
+        @font-face {
+            font-family: 'DSEG7Classic-Regular';
+            src: url('fonts/DSEG7Classic-Regular.ttf') format('truetype');
+            font-weight: 300;
+        }
+        body {
+            font-family: 'NotoSansJP_ExtraLight', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-family: 'Galette',sans-serif;
+            font-size: 7vh;
+            position: absolute;  /* 絶対位置指定 */
+            left: 1vh;
+            top: 1vh;
+            margin: 0;
+            color: #b9fff3;
+        }        
+        h2 {
+            font-family: 'NotoSansJP_ExtraLight', sans-serif;
+            font-size: 2vh;
+            position: absolute;
+            left:1.5vh;
+            top: 8vh;
+            margin: 0;
+            color: #b9fff3;
+        }
+
+        #SpectrogramText {
+            font-size: 2vh;
+            position: absolute;
+            left: 67.5vw;
+            top: 12vh;
+            color: #b6b6b6;
+        }
+        #CameraText {
+            font-size: 2vh;
+            position: absolute;
+            left: 67.5vw;
+            top: 66vh;
+            color: #b6b6b6;
+        }
+        
+        #RSAStatus1 {
+            font-size: 3vh;
+            position: absolute;
+            left: 67.5vw;
+            top: 1vh;
+            color: #b6b6b6;
+        }
+        #RSAStatus2 {
+            font-size: 3vh;
+            position: absolute;
+            left:72vw;
+            top: 1vh;
+            color: #850000/*#00b126*/;
+        }
+        #CAMStatus1 {
+            font-size: 3vh;
+            position: absolute;
+            left: 67.5vw;
+            top: 4vh;
+            color: #b6b6b6;
+        }
+        #CAMStatus2 {
+            font-size: 3vh;
+            position: absolute;
+            left:72vw;
+            top: 4vh;
+            color: #850000/*#00b126*/;
+        }
+        #SLAMStatus1 {
+            font-size: 3vh;
+            position: absolute;
+            left: 67.5vw;
+            top: 7vh;
+            color: #b6b6b6;
+        }
+        #SLAMStatus2 {
+            font-size: 3vh;
+            position: absolute;
+            left:72vw;
+            top: 7vh;
+            color: #850000/*#00b126*/;
+        }
+
+        /* 日時表示のスタイル */
+        #datetime {
+            font-family: 'DSEG7Classic-Regular',sans-serif;
+            font-size: 4vh;
+            position: absolute;
+            right: 1vh;
+            top: 2vh;
+            text-align: right;
+            white-space: pre;
+            margin: 0;
+            color: #be3c00;
+        }
+
+        /* 画像のスタイル　*/
+        #VDImage {
+            position: absolute;
+            left: 67.5vw;
+            top: 15vh;
+            width:32vw;
+            height: 50vh;
+        }
+        #TVImage {
+            position: absolute;
+            left: 67.5vw;
+            top: 69vh;
+            width: 32vw;
+            height: 30vh;
+        }
+       
+        .button {
+            width: calc(50vw / 4);
+            height: 10vh;
+            font-size: 3vh;
+            color: white;
+            background-color: #333;
+            border: none;
+            position: absolute;
+            top: 15vh;
+            cursor: pointer;
+        }
+
+        .selected {
+            background-color: #006144;
+        }
+
+        #cameraBtn { left: 1vw; }
+        #freq920Btn { left: calc( 1vw + (53vw / 4)); }
+        #freq2450Btn { left: calc( 1vw + (53vw / 4) * 2); }
+        #freq5250Btn { left: calc( 1vw + (53vw / 4) * 3); }
+        #freq5600Btn { left: calc( 1vw + (53vw / 4) * 4); }
+
+        .textbox {
+            height: 10vh;
+            font-size: 3vh;
+            padding-left: 1vw;
+            position: absolute;
+        }
+
+        #MeasurementItemsButtonText {
+            font-size: 2vh;
+            position: absolute;
+            left:1vw;
+            top: 12vh;
+            color: #b6b6b6;
+        }
+        #filenameInputText {
+            font-size: 2vh;
+            position: absolute;
+            left:1vw;
+            top: 25vh;
+            color: #b6b6b6;
+        }
+        #filenameAutoInputText {
+            font-size: 3vh;
+            position: absolute;
+            left:42vw;
+            top: 31vh;
+            color: #b6b6b6;
+        }
+        #memoInputText {
+            font-size: 2vh;
+            position: absolute;
+            left:1vw;
+            top: 39vh;
+            color: #b6b6b6;
+        }
+        #timeInputText {
+            font-size: 2vh;
+            position: absolute;
+            left:1vw;
+            top: 67vh;
+            color: #b6b6b6;
+        }
+        #pathInputText {
+            font-size: 2vh;
+            position: absolute;
+            left:13vw;
+            top: 67vh;
+            color: #b6b6b6;
+        }
+
+        #filenameInput {
+            top: 28vh;
+            left: 1vw;
+            width: 38vw;
+        }
+
+        #memoInput {
+            top: 42vh;
+            left: 1vw;
+            height: 20vh;
+            width: 64vw;
+        }
+
+        #timeInput {
+            top: 70vh;
+            left: 1vw;
+            width: 10vw;
+        }
+
+        #pathInput {
+            top: 70vh;
+            left: 13vw;
+            width: 52vw;
+        }
+
+        #executeBtn {
+            top: 85vh;
+            left: 1vw;
+            width: 65.5vw;
+            height: 10vh;
+            font-size: 5vh;
+            background-color: #0055ff;
+            color: white;
+            border: none;
+            position: absolute;
+            cursor: pointer;
+        }
+
+        #progressBarContainer {
+            top: 96vh;
+            left: 1vw;
+            width: 65.5vw;
+            height: 3vh;
+            background-color: #333;
+            position: absolute;
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 0;
+            background-color: #00b126;
+        }
+    </style>
+</head>
+<body>
+    <h1>TRAMs Control</h1>
+    <h2>Tunnel Radio-environment Automatic Measurement System</h2>
+    <div id="datetime"></div>
+
+    <!-- VirtualDisplay画像-->    
+    <div id="SpectrogramText">Spectrogram View</div>
+    <img id="VDImage" src="http://127.0.0.1:9092/capture" alt="VDImage">
+
+    <!-- ThetaV画像-->
+    <div id="CameraText">Camera View</div>
+    <img id="TVImage" src="http://127.0.0.1:9091/capture" alt="TVImage">
+
+    <!-- ステータス -->
+    <div id="RSAStatus1">RSA</div>
+    <!--<div id="RSAStatus2">RDY</div>-->
+    <div id="RSAStatus2">...</div>
+    <div id="CAMStatus1">CAM</div>
+    <!--<div id="CAMStatus2">RDY</div>-->
+    <div id="CAMStatus2">...</div>
+    <div id="SLAMStatus1">SLAM</div>
+    <!--<div id="SLAMStatus2">RDY</div>-->
+    <div id="SLAMStatus2">...</div>
+
+    <!-- 測定項目選択ボタン -->
+    <div id="MeasurementItemsButtonText">Measurement Items</div>
+    <button id="cameraBtn" class="button">Camera</button>
+    <button id="freq920Btn" class="button">920MHz</button>
+    <button id="freq2450Btn" class="button">2450MHz</button>
+    <button id="freq5250Btn" class="button">5250MHz</button>
+    <button id="freq5600Btn" class="button">5600MHz</button>
+
+    <!-- ファイル名入力ボックス -->
+    <div id="filenameInputText">Filename</div>
+    <input id="filenameInput" class="textbox" type="text" value="">
+    <div id="filenameAutoInputText">_cf{CenterFreq}_sgram_{Num}.csv</div>
+
+    <!-- メモ入力ボックス -->
+    <div id="memoInputText">Memo</div>
+    <input id="memoInput" class="textbox" type="text" value="">
+
+    <!-- 測定時間入力ボックス -->
+    <div id="timeInputText">Measurement Time</div>
+    <input id="timeInput" class="textbox" type="text" value="1">
+
+    <!-- 保存パス入力ボックス -->
+    <div id="pathInputText">File Storage path</div>
+    <input id="pathInput" class="textbox" type="text" value="C:/TRAMs/data">
+
+    <!-- 実行ボタン -->
+    <button id="executeBtn">Execution!</button>
+
+    <!-- 進行状況バー -->
+    <div id="progressBarContainer">
+        <div id="progressBar"></div>
+    </div>
+
+    <script>
+        const selectedItems = [];
+        let isCameraSelected = 0;
+    
+        // Camera有効を初期状態に
+        window.addEventListener('load', function() {
+            const cameraBtn = document.getElementById('cameraBtn');
+            cameraBtn.classList.add('selected');
+            isCameraSelected = 1;
+        });
+    
+        // Cameraの有効・無効処理
+        document.getElementById('cameraBtn').addEventListener('click', function() {
+            if (isCameraSelected === 1) {
+                this.classList.remove('selected');
+                isCameraSelected = 0;
+            } else {
+                this.classList.add('selected');
+                isCameraSelected = 1;
+            }
+        });
+    
+        // 各周波数ボタンの機能を用意
+        document.getElementById('freq920Btn').addEventListener('click', function() {
+            toggleSelection(this, 920e6, 20e6);
+        });
+        document.getElementById('freq2450Btn').addEventListener('click', function() {
+            toggleSelection(this, 2450e6, 100e6);
+        });
+        document.getElementById('freq5250Btn').addEventListener('click', function() {
+            toggleSelection(this, 5250e6, 160e6);
+        });
+        document.getElementById('freq5600Btn').addEventListener('click', function() {
+            toggleSelection(this, 5600e6, 220e6);
+        });
+        // 各周波数の有効・無効処理
+        function toggleSelection(button, centerFreq, span) {
+            const index = selectedItems.findIndex(item => item.centerFreq === centerFreq);
+            if (index === -1) {
+                selectedItems.push({ centerFreq, span });
+                button.classList.add('selected');
+            } else {
+                selectedItems.splice(index, 1);
+                button.classList.remove('selected');
+            }
+        }
+    
+        // 実行ボタンを押した時にHTTP-Postを送信
+        document.getElementById('executeBtn').addEventListener('click', function() {
+            const minutes = parseFloat(document.getElementById('timeInput').value);
+            const savePath = document.getElementById('pathInput').value;
+            const filename = document.getElementById('filenameInput').value;
+            const memo = document.getElementById('memoInput').value;
+            fetch('http://localhost:9090/measure', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    measurements: selectedItems,
+                    minutes: minutes,
+                    save_path: savePath,
+                    camera: isCameraSelected,
+                    filename: filename,
+                    memo: memo
+                })
+            })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+        });
+    
+        // 進行状況バー
+        document.getElementById('executeBtn').addEventListener('click', function() {
+            // selectedItemsに基づいて測定回数を計算
+            const measurementSteps = selectedItems.reduce((total, item) => {
+                return total + item.span / 20e6;
+            }, 0);
+    
+            const measurementTime = parseFloat(document.getElementById('timeInput').value) || 1;
+            const executionTime = measurementSteps * (measurementTime * 60 + 5);
+    
+            if (executionTime > 0) {
+                let progress = 0;
+                const interval = 500;  // 500msごとに進行状況を更新
+                const totalIntervals = executionTime * 10;
+                const progressBarInterval = setInterval(function() {
+                    progress++;
+                    updateProgressBar((progress / totalIntervals) * 100);
+    
+                    if (progress >= totalIntervals) {
+                        clearInterval(progressBarInterval);
+                        resumeAutoUpdate();  // 実行が完了したらファイル名日時の自動更新を再開
+                    }
+                }, interval);
+            }
+        });
+        function updateProgressBar(progress) {
+            var progressBar = document.getElementById("progressBar");
+            progressBar.style.width = progress + "%";
+        }
+    
+        // 表示用日時を更新する関数
+        function updateDateTime() {
+            var now = new Date();
+            var year = now.getFullYear();
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var day = String(now.getDate()).padStart(2, '0');
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            var seconds = String(now.getSeconds()).padStart(2, '0');
+            var dateTimeString = `${year}-${month}-${day}\n${hours}:${minutes}:${seconds}`;
+            document.getElementById('datetime').textContent = dateTimeString;
+        }
+        
+        let autoUpdate = true;  // ファイル名の自動更新を制御するフラグ
+    
+        // ファイル名用日時を更新する関数
+        function updateFileDateTime() {
+            if (autoUpdate) {
+                var now = new Date();
+                var year = now.getFullYear();
+                var month = String(now.getMonth() + 1).padStart(2, '0');
+                var day = String(now.getDate()).padStart(2, '0');
+                var hours = String(now.getHours()).padStart(2, '0');
+                var minutes = String(now.getMinutes()).padStart(2, '0');
+                var seconds = String(now.getSeconds()).padStart(2, '0');
+                var filedateTimeString = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+                document.getElementById('filenameInput').value = filedateTimeString;
+            }
+        }
+
+        // テキストボックスが編集されたときに自動更新を停止
+        document.getElementById('filenameInput').addEventListener('input', function() {
+            autoUpdate = false;
+        });
+    
+        // 実行完了後に再度日時の自動更新を開始
+        function resumeAutoUpdate() {
+            autoUpdate = true;
+        }
+    
+        // 画像をリロード
+        function reloadVDImage() {
+            var img = document.getElementById('VDImage');
+            img.src = 'http://127.0.0.1:9092/capture?' + new Date().getTime();
+        }
+        function reloadTVImage() {
+            var img = document.getElementById('TVImage');
+            img.src = 'http://127.0.0.1:9091/capture?' + new Date().getTime();
+        }
+    
+        // 0.5秒ごとに画像と日時を更新
+        setInterval(reloadVDImage, 500);
+        setInterval(reloadTVImage, 500);
+        setInterval(updateDateTime, 970);
+        setInterval(updateFileDateTime, 970);
+    
+        // ページ読み込み時に初期化
+        window.onload = function() {
+            updateDateTime();
+            updateFileDateTime();
+        };
+    </script>    
+</body>
+</html>
