@@ -328,7 +328,8 @@
     <script>
         const selectedItems = [];
         let isCameraSelected = 0;
-    
+        let autoUpdate = true;  // ファイル名の自動更新を制御するフラグ
+        
         // Camera有効を初期状態に
         window.addEventListener('load', function() {
             const cameraBtn = document.getElementById('cameraBtn');
@@ -378,6 +379,7 @@
             const savePath = document.getElementById('pathInput').value;
             const filename = document.getElementById('filenameInput').value;
             const memo = document.getElementById('memoInput').value;
+            autoUpdate = false;
             fetch('http://localhost:9090/measure', {
                 method: 'POST',
                 headers: {
@@ -406,7 +408,7 @@
     
             const measurementTime = parseFloat(document.getElementById('timeInput').value) || 1;
             const executionTime = measurementSteps * (measurementTime * 60 + 5);
-    
+            console.log(executionTime);
             if (executionTime > 0) {
                 let progress = 0;
                 const interval = 500;  // 500msごとに進行状況を更新
@@ -439,8 +441,6 @@
             var dateTimeString = `${year}-${month}-${day}\n${hours}:${minutes}:${seconds}`;
             document.getElementById('datetime').textContent = dateTimeString;
         }
-        
-        let autoUpdate = true;  // ファイル名の自動更新を制御するフラグ
     
         // ファイル名用日時を更新する関数
         function updateFileDateTime() {
