@@ -328,8 +328,7 @@
     <script>
         const selectedItems = [];
         let isCameraSelected = 0;
-        let autoUpdate = true;  // ファイル名の自動更新を制御するフラグ
-        
+    
         // Camera有効を初期状態に
         window.addEventListener('load', function() {
             const cameraBtn = document.getElementById('cameraBtn');
@@ -399,19 +398,20 @@
             .catch(error => console.error('Error:', error));
         });
     
-        // 進行状況バー
-        document.getElementById('executeBtn').addEventListener('click', function() {
+                document.getElementById('executeBtn').addEventListener('click', function() {
             // selectedItemsに基づいて測定回数を計算
             const measurementSteps = selectedItems.reduce((total, item) => {
                 return total + item.span / 20e6;
             }, 0);
-    
+            
+            // 実行ボタンを押した際に進行状況バーを進める処理
             const measurementTime = parseFloat(document.getElementById('timeInput').value) || 1;
             const executionTime = measurementSteps * (measurementTime * 60 + 5);
             console.log(executionTime);
+
             if (executionTime > 0) {
                 let progress = 0;
-                const interval = 500;  // 500msごとに進行状況を更新
+                const interval = 100;
                 const totalIntervals = executionTime * 10;
                 const progressBarInterval = setInterval(function() {
                     progress++;
@@ -419,11 +419,13 @@
     
                     if (progress >= totalIntervals) {
                         clearInterval(progressBarInterval);
-                        resumeAutoUpdate();  // 実行が完了したらファイル名日時の自動更新を再開
+                        resumeAutoUpdate(); 
                     }
                 }, interval);
             }
         });
+    
+        // 進行状況バーの進捗をシミュレート
         function updateProgressBar(progress) {
             var progressBar = document.getElementById("progressBar");
             progressBar.style.width = progress + "%";
@@ -441,6 +443,8 @@
             var dateTimeString = `${year}-${month}-${day}\n${hours}:${minutes}:${seconds}`;
             document.getElementById('datetime').textContent = dateTimeString;
         }
+        
+        let autoUpdate = true;  // ファイル名の自動更新を制御するフラグ
     
         // ファイル名用日時を更新する関数
         function updateFileDateTime() {
