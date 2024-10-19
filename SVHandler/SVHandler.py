@@ -82,6 +82,8 @@ def measure_spectrogram(center_freqs, span, bandwidth, minutes, save_path, filen
         rsa.write(f'sgram:frequency:center {center_freq}')
         rsa.write(f'sgram:frequency:span 20e6')
         rsa.write(f'sgram:bandwidth {bandwidth}')
+        rsa.write('SENSE:SGRam:COLor:MAXimum -60')
+        rsa.write('SENSE:SGRam:COLor:MINimum -115')
         rsa.write('initiate:immediate')
         rsa.query('*opc?')
         time.sleep(seconds)
