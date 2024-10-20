@@ -10,6 +10,17 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
+log_path = "C:/TRAMs/data"
+
+# 測定のログを保存
+def save_log(log_path, log_content):
+    log_file = os.path.join(log_path, 'log.csv')
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+    with open(log_file, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([current_time, log_content])
 
 # VISAの接続設定
 rm = pyvisa.ResourceManager()
@@ -18,15 +29,21 @@ rsa.timeout = 10000
 rsa.encoding = 'latin_1'
 rsa.write_termination = None
 rsa.read_termination = '\n'
-print('CNCT ', rsa.query('*idn?'))
+rsaid = rsa.query('*idn?')
+save_log(log_path, f'CNCT CMPL {rsaid}')
+print('CNCT ', rsaid)
 
+save_log(log_path, 'INIT STRT')
 rsa.write('*rst') # reset
 rsa.write('*cls') # clear status
 rsa.write('abort') # abort 実行中の測定を中止
+rsa.query('*opc?')
+save_log(log_path, 'INIT CMPL')
 print('INIT CMPL')
 
 # 測定周波数リストを生成
 def generate_frequency_list(request_center_freq, request_total_span, step_span=20e6):
+    save_log(log_path, f'FCAL STRT {request_center_freq} {request_total_span}')
     num_steps = math.ceil(request_total_span / step_span)
     frequencies = []
     # 測定回数が奇数
@@ -41,7 +58,9 @@ def generate_frequency_list(request_center_freq, request_total_span, step_span=2
         for i in range(num_steps):
             freq = request_center_freq + (i - mid_index - 0.5) * step_span
             frequencies.append(freq)
-    print('FREQ RSLT')
+    save_log(log_path, f'FCAL CMPL {request_center_freq} {request_total_span}')
+    save_log(log_path, f'FREQ RSLT {frequencies}')
+    print(f'FREQ RSLT')
     print(frequencies)
     return frequencies
 
@@ -72,37 +91,57 @@ def save_memo(save_path, filename_base, memo_content):
 
 # スペクトログラムの測定を行いデータを保存
 def measure_spectrogram(center_freqs, span, bandwidth, minutes, save_path, filename_base, camera_enabled):
-    print("MEAS STRT")
+    save_log(log_path, 'BAND STRT')
+    print("BAND STRT")
     seconds = minutes * 60
     for idx, center_freq in enumerate(center_freqs):
+        save_log(log_path, f'MEAS STRT {center_freq}')
+        save_log(log_path, 'CMND EXEC display:general:measview:new sgram')
         rsa.write('display:general:measview:new sgram')
+        save_log(log_path, 'CMND EXEC INPUT:RF:GAIN:STATE ON')
         rsa.write('INPUT:RF:GAIN:STATE ON')
+        save_log(log_path, 'CMND EXEC INPUT:RF:ATTENUATION:AUTO OFF')
         rsa.write('INPUT:RF:ATTENUATION:AUTO OFF')
+        save_log(log_path, 'CMND EXEC INPUT:RF:ATTENUATION 0')
         rsa.write('INPUT:RF:ATTENUATION 0')
+        save_log(log_path, f'CMND EXEC sgram:frequency:center {center_freq}')
         rsa.write(f'sgram:frequency:center {center_freq}')
+        save_log(log_path, f'CMND EXEC sgram:frequency:span 20e6')
         rsa.write(f'sgram:frequency:span 20e6')
+        save_log(log_path, f'CMND EXEC sgram:bandwidth {bandwidth}')
         rsa.write(f'sgram:bandwidth {bandwidth}')
-        rsa.write('SENSE:SGRam:COLor:MAXimum -60')
-        rsa.write('SENSE:SGRam:COLor:MINimum -115')
-        rsa.write('initiate:immediate')
+        save_log(log_path, 'CMND EXEC *opc?')
         rsa.query('*opc?')
+        save_log(log_path, 'CMND EXEC initiate:immediate')
+        rsa.write('initiate:immediate')
+        save_log(log_path, 'CMND EXEC *opc?')
+        rsa.query('*opc?')
+        save_log(log_path, 'CMND EXEC MEAS STRT')
         time.sleep(seconds)
+        save_log(log_path, 'CMND EXEC initiate:continuous off')
         rsa.write('initiate:continuous off')
+        save_log(log_path, 'MEAS CMPL {center_freq}')
         files = int(seconds / 25) + 2
+        save_log(log_path, 'SAVE STRT')
         for i in range(files):
             div = 20 * i
             rsa.write(f'display:sgram:time:offset:divisions {div}')
             rsa.write(f'mmemory:store:results "{save_path}/{filename_base}_cf{int(center_freq)}_sgram_{i}.csv"')
+        save_log(log_path, 'SAVE CMPL')
         if camera_enabled:
             capture_image(save_path, filename_base, idx)
         rsa.write('*rst')
         rsa.write('*cls')
         rsa.write('abort')
-    print("MEAS CMPL")
+        rsa.query('*opc?')
+        save_log(log_path, f'MEAS CMPL {center_freq}')
+    save_log(log_path, 'BAND CMPL')
+    print("BAND CMPL")
 
 # Flaskのエンドポイント
 @app.route('/measure', methods=['POST'])
 def receive_measurement_request():
+    save_log(log_path, 'RQST RECV')
     print('RQST RECV')
     data = request.json
     measurements = data.get('measurements', [])
@@ -124,6 +163,7 @@ def receive_measurement_request():
     # memoを保存
     save_memo(save_path, filename_base, memo_content)
 
+    save_log(log_path, 'RQST CMPL')
     print('RQST CMPL')
     return jsonify({"status": "Measurement complete"})
 
