@@ -36,7 +36,7 @@ def save_log(log_path, log_content):
 try:
     rm = pyvisa.ResourceManager()
     rsa = rm.open_resource('GPIB8::1::INSTR')
-    rsa.timeout = 10000
+    rsa.timeout = 30000
     rsa.encoding = 'latin_1'
     rsa.write_termination = None
     rsa.read_termination = '\n'
@@ -48,15 +48,23 @@ except Exception as e:
     print('CNCT FAIL', str(e))
 
 save_log(log_path, 'INIT STRT')
-rsa.write('*rst') # reset
-rsa.write('*cls') # clear status
-rsa.write('abort') # abort 実行中の測定を中止
+rsa.write('*rst')
+rsa.write('*cls')
+rsa.write('abort')
+rsa.query('*opc?')
+rsa.write('display:general:measview:new sgram')
+rsa.write('INPUT:RF:GAIN:STATE ON')
+rsa.write('INPUT:RF:ATTENUATION:AUTO OFF')
+rsa.write('INPUT:RF:ATTENUATION 0')
+rsa.write('SENSE:SGRam:COLor:MAXimum -60')
+rsa.write('SENSE:SGRam:COLor:MINimum -130')
+rsa.write('INPUT:RLEVEL -30')
 rsa.query('*opc?')
 save_log(log_path, 'INIT CMPL')
 print('INIT CMPL')
 
 # 測定周波数リストを生成
-def generate_frequency_list(request_center_freq, request_total_span, step_span=20e6):
+def generate_frequency_list(request_center_freq, request_total_span, step_span):
     save_log(log_path, f'FCAL STRT {request_center_freq} {request_total_span}')
     num_steps = math.ceil(request_total_span / step_span)
     frequencies = []
@@ -85,7 +93,7 @@ def capture_image(save_path, filename_base, center_freq):
     if response.status_code == 200:
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        image_path = os.path.join(save_path, f"{filename_base}_{center_freq}_camera.jpg")
+        image_path = os.path.join(save_path, f"{filename_base}_cf{center_freq}_camera.jpg")
         with open(image_path, 'wb') as file:
             file.write(response.content)
         print('PICT SUCC')
@@ -104,38 +112,32 @@ def save_memo(save_path, filename_base, memo_content):
     print('MEMO SAVED')
 
 # スペクトログラムの測定を行いデータを保存
-def measure_spectrogram(center_freqs, span, bandwidth, minutes, save_path, filename_base, camera_enabled):
+def measure_spectrogram(center_freqs, step_span, bandwidth, minutes, save_path, filename_base, camera_enabled):
     save_log(log_path, 'BAND STRT')
     print("BAND STRT")
     seconds = minutes * 60
     max_retries = 3  # 最大再試行回数
-
-    for idx, center_freq in enumerate(center_freqs):
+    for center_freq in enumerate(center_freqs):
         attempt = 0  # 試行回数
         while attempt < max_retries:
             try:
                 save_log(log_path, f'MEAS STRT {center_freq}')
-                save_log(log_path, 'CMND EXEC display:general:measview:new sgram')
-                rsa.write('display:general:measview:new sgram')
-                save_log(log_path, 'CMND EXEC INPUT:RF:GAIN:STATE ON')
-                rsa.write('INPUT:RF:GAIN:STATE ON')
-                save_log(log_path, 'CMND EXEC INPUT:RF:ATTENUATION:AUTO OFF')
-                rsa.write('INPUT:RF:ATTENUATION:AUTO OFF')
-                save_log(log_path, 'CMND EXEC INPUT:RF:ATTENUATION 0')
-                rsa.write('INPUT:RF:ATTENUATION 0')
                 save_log(log_path, f'CMND EXEC sgram:frequency:center {center_freq}')
                 rsa.write(f'sgram:frequency:center {center_freq}')
-                save_log(log_path, f'CMND EXEC sgram:frequency:span 20e6')
-                rsa.write(f'sgram:frequency:span 20e6')
+                save_log(log_path, f'CMND EXEC sgram:frequency:span {step_span}')
+                rsa.write(f'sgram:frequency:span {step_span}')
                 save_log(log_path, f'CMND EXEC sgram:bandwidth {bandwidth}')
                 rsa.write(f'sgram:bandwidth {bandwidth}')
+                save_log(log_path, 'display:sgram:time:offset:divisions 0')
+                rsa.write(f'display:sgram:time:offset:divisions 0')
+                save_log(log_path, 'initiate:continuous on')
+                rsa.write('initiate:continuous on')
                 save_log(log_path, 'CMND EXEC *opc?')
                 rsa.query('*opc?')
                 save_log(log_path, 'CMND EXEC initiate:immediate')
                 rsa.write('initiate:immediate')
                 save_log(log_path, 'CMND EXEC *opc?')
                 rsa.query('*opc?')
-                save_log(log_path, 'CMND EXEC MEAS STRT')
                 time.sleep(seconds)
                 save_log(log_path, 'CMND EXEC initiate:continuous off')
                 rsa.write('initiate:continuous off')
@@ -153,17 +155,15 @@ def measure_spectrogram(center_freqs, span, bandwidth, minutes, save_path, filen
             except Exception as e:
                 attempt += 1
                 save_log(log_path, f'MEAS FAIL {center_freq} {str(e)}')
-                print(f'MEAS FAIL {center_freq}, Attempt {attempt} of {max_retries}', str(e))
+                print(f'MEAS RTRY')
                 if attempt >= max_retries:
-                    print(f'MAX RETRIES REACHED for {center_freq}, skipping...')
+                    print(f'MEAS SKIP')
                     break  # 最大再試行回数に達したら次の周波数に進む
             finally:
-                rsa.write('*rst')
-                rsa.write('*cls')
                 rsa.write('abort')
+                rsa.write('*cls')
                 rsa.query('*opc?')
             save_log(log_path, f'MEAS CMPL {center_freq}')
-
     save_log(log_path, 'BAND CMPL')
     print("BAND CMPL")
 
@@ -189,14 +189,22 @@ def receive_measurement_request():
         # 複数の測定を順次実施
         for measurement in measurements:
             request_center_freq = measurement.get('centerFreq')
-            request_total_span = measurement.get('span', 20e6)
+            step_span = measurement.get('span', 20e6)
             bandwidth = measurement.get('bandwidth', 1e3)
             # 測定する中心周波数のリストを生成
-            center_freqs = generate_frequency_list(request_center_freq, request_total_span)
+            center_freqs = generate_frequency_list(request_center_freq, step_span)
             # 測定を実行しデータを保存
-            measure_spectrogram(center_freqs, request_total_span, bandwidth, minutes, save_path, filename_base, camera_enabled)
+            try:
+                measure_spectrogram(center_freqs, step_span, bandwidth, minutes, save_path, filename_base, camera_enabled)
+            except TimeoutError as e:
+                save_log(log_path, f'MEAS TOUT {request_center_freq} {str(e)}')
+                print(f'MEAS TOUT for {request_center_freq}')
+                print(f'MEAS RTRY')
         # memoを保存
-        save_memo(save_path, filename_base, memo_content)
+        try:
+            save_memo(save_path, filename_base, memo_content)
+        except Exception as e:
+            print(f'Error occurred while saving memo: {str(e)}')
 
         save_log(log_path, 'RQST CMPL')
         print('RQST CMPL')
