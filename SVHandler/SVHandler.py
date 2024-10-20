@@ -64,7 +64,7 @@ save_log(log_path, 'INIT CMPL')
 print('INIT CMPL')
 
 # 測定周波数リストを生成
-def generate_frequency_list(request_center_freq, request_total_span, step_span):
+def generate_frequency_list(request_center_freq, request_total_span, step_span=20e6):
     save_log(log_path, f'FCAL STRT {request_center_freq} {request_total_span}')
     num_steps = math.ceil(request_total_span / step_span)
     frequencies = []
@@ -109,23 +109,25 @@ def save_memo(save_path, filename_base, memo_content):
     with open(memo_file, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow([current_time, filename_base, memo_content])
-    print('MEMO SAVED')
+    print('MEMO SAVE')
 
 # スペクトログラムの測定を行いデータを保存
-def measure_spectrogram(center_freqs, step_span, bandwidth, minutes, save_path, filename_base, camera_enabled):
+def measure_spectrogram(center_freqs, span, bandwidth, minutes, save_path, filename_base, camera_enabled):
     save_log(log_path, 'BAND STRT')
     print("BAND STRT")
     seconds = minutes * 60
     max_retries = 3  # 最大再試行回数
-    for center_freq in enumerate(center_freqs):
+
+    for idx, center_freq in enumerate(center_freqs):
         attempt = 0  # 試行回数
         while attempt < max_retries:
             try:
                 save_log(log_path, f'MEAS STRT {center_freq}')
+                
                 save_log(log_path, f'CMND EXEC sgram:frequency:center {center_freq}')
                 rsa.write(f'sgram:frequency:center {center_freq}')
-                save_log(log_path, f'CMND EXEC sgram:frequency:span {step_span}')
-                rsa.write(f'sgram:frequency:span {step_span}')
+                save_log(log_path, f'CMND EXEC sgram:frequency:span 20e6')
+                rsa.write(f'sgram:frequency:span 20e6')
                 save_log(log_path, f'CMND EXEC sgram:bandwidth {bandwidth}')
                 rsa.write(f'sgram:bandwidth {bandwidth}')
                 save_log(log_path, 'display:sgram:time:offset:divisions 0')
@@ -138,6 +140,7 @@ def measure_spectrogram(center_freqs, step_span, bandwidth, minutes, save_path, 
                 rsa.write('initiate:immediate')
                 save_log(log_path, 'CMND EXEC *opc?')
                 rsa.query('*opc?')
+                save_log(log_path, 'CMND EXEC MEAS STRT')
                 time.sleep(seconds)
                 save_log(log_path, 'CMND EXEC initiate:continuous off')
                 rsa.write('initiate:continuous off')
@@ -160,10 +163,12 @@ def measure_spectrogram(center_freqs, step_span, bandwidth, minutes, save_path, 
                     print(f'MEAS SKIP')
                     break  # 最大再試行回数に達したら次の周波数に進む
             finally:
+                #rsa.write('*rst')
                 rsa.write('abort')
                 rsa.write('*cls')
                 rsa.query('*opc?')
             save_log(log_path, f'MEAS CMPL {center_freq}')
+
     save_log(log_path, 'BAND CMPL')
     print("BAND CMPL")
 
@@ -189,13 +194,13 @@ def receive_measurement_request():
         # 複数の測定を順次実施
         for measurement in measurements:
             request_center_freq = measurement.get('centerFreq')
-            step_span = measurement.get('span', 20e6)
+            request_total_span = measurement.get('span', 20e6)
             bandwidth = measurement.get('bandwidth', 1e3)
             # 測定する中心周波数のリストを生成
-            center_freqs = generate_frequency_list(request_center_freq, step_span)
+            center_freqs = generate_frequency_list(request_center_freq, request_total_span)
             # 測定を実行しデータを保存
             try:
-                measure_spectrogram(center_freqs, step_span, bandwidth, minutes, save_path, filename_base, camera_enabled)
+                measure_spectrogram(center_freqs, request_total_span, bandwidth, minutes, save_path, filename_base, camera_enabled)
             except TimeoutError as e:
                 save_log(log_path, f'MEAS TOUT {request_center_freq} {str(e)}')
                 print(f'MEAS TOUT for {request_center_freq}')
