@@ -3,7 +3,7 @@
 :: 1. SignalVu-PC.exe を起動
 echo Start SignalVu-PC.exe...
 start "SignalVu-PC" "C:\Program Files\Tektronix\SignalVu-PC\SignalVu-PC.exe"
-timeout /t 25
+timeout /t 50
 
 :: 2. Tek SignalVu-PCウィンドウを第二ディスプレイに移動
 C:\TRAMs\multimonitortool\MultiMonitorTool.exe /MoveWindow Primary title "Tek SignalVu"
