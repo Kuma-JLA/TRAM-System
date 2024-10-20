@@ -15,10 +15,10 @@ def get_second_display_area():
         monitor_number = 2
         mon = sct.monitors[monitor_number]
         monitor = {
-            "top": int(mon["top"] + (mon["height"] * 0.118)),
-            "left": int(mon["left"] + (mon["width"] * 0.064)),
-            "width": int(mon["width"] * 0.423),
-            "height": int(mon["height"] * 0.78),
+            "top": int(mon["top"] + (mon["height"] * 0.095)),
+            "left": int(mon["left"] + (mon["width"] * 0.05)),
+            "width": int(mon["width"] * 0.44),
+            "height": int(mon["height"] * 0.7),
             "mon": monitor_number
         }
         return monitor
