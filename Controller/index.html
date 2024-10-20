@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!- 2024-10-19 23:24 ->
+<!- 2024-10-20 21:00 ->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -365,12 +365,37 @@
         function toggleSelection(button, centerFreq, span) {
             const index = selectedItems.findIndex(item => item.centerFreq === centerFreq);
             if (index === -1) {
+                // 新しいアイテムを追加する場合
                 selectedItems.push({ centerFreq, span });
-                button.classList.add('selected');
             } else {
+                // アイテムが既に存在する場合は削除する
                 selectedItems.splice(index, 1);
-                button.classList.remove('selected');
             }
+            // selectedItemsを特定の順序に並べ替え
+            selectedItems.sort((a, b) => {
+                const order = [920000000, 2450000000, 5250000000, 5600000000];
+                return order.indexOf(a.centerFreq) - order.indexOf(b.centerFreq);
+            });
+            // ボタンの選択状態を更新
+            updateButtonSelection();
+        }
+        // ボタンの選択状態を更新する関数
+        function updateButtonSelection() {
+            const buttons = [
+                { id: 'freq920Btn', centerFreq: 920e6 },
+                { id: 'freq2450Btn', centerFreq: 2450e6 },
+                { id: 'freq5250Btn', centerFreq: 5250e6 },
+                { id: 'freq5600Btn', centerFreq: 5600e6 }
+            ];
+            buttons.forEach(button => {
+                const btnElement = document.getElementById(button.id);
+                const isSelected = selectedItems.some(item => item.centerFreq === button.centerFreq);
+                if (isSelected) {
+                    btnElement.classList.add('selected');
+                } else {
+                    btnElement.classList.remove('selected');
+                }
+            });
         }
     
         // 実行ボタンを押した時にHTTP-Postを送信
